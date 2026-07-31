@@ -91,6 +91,50 @@ export function numberToWordsINR(num: number): string {
   return `${words} Rupees Only`;
 }
 
+const canvasCtx = typeof document !== 'undefined' ? document.createElement('canvas').getContext('2d') : null;
+
+function convertColorToRgbOrHex(colorStr: string): string {
+  if (!canvasCtx) return '#000000';
+  try {
+    canvasCtx.fillStyle = '#000000';
+    canvasCtx.fillStyle = colorStr;
+    const res = canvasCtx.fillStyle;
+    if (res && res !== '#000000') return res;
+  } catch (e) {
+    // fallback
+  }
+  return '#000000';
+}
+
+function sanitizeCssForHtml2Canvas(cssText: string): string {
+  if (!cssText) return '';
+  const pattern = /(oklch|oklab|lab|lch|color-mix)\((?:[^()]+|\((?:[^()]+|\([^()]*\))*\))*\)/gi;
+  return cssText.replace(pattern, (match) => {
+    return convertColorToRgbOrHex(match);
+  });
+}
+
+function inlineComputedStyles(source: HTMLElement, target: HTMLElement) {
+  try {
+    const computed = window.getComputedStyle(source);
+    if (computed.color) target.style.color = computed.color;
+    if (computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+      target.style.backgroundColor = computed.backgroundColor;
+    }
+    if (computed.borderColor) target.style.borderColor = computed.borderColor;
+
+    const sourceChildren = Array.from(source.children) as HTMLElement[];
+    const targetChildren = Array.from(target.children) as HTMLElement[];
+    for (let i = 0; i < sourceChildren.length; i++) {
+      if (sourceChildren[i] && targetChildren[i]) {
+        inlineComputedStyles(sourceChildren[i], targetChildren[i]);
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
 export async function downloadElementAsPDF(elementId: string, filename: string): Promise<boolean> {
   const element = document.getElementById(elementId);
   if (!element) return false;
@@ -104,81 +148,29 @@ export async function downloadElementAsPDF(elementId: string, filename: string):
       backgroundColor: '#ffffff',
       windowWidth: 1200,
       onclone: (clonedDoc) => {
-        const dummyEl = clonedDoc.createElement('div');
-        dummyEl.style.display = 'none';
-        clonedDoc.body.appendChild(dummyEl);
-
-        const replaceUnsupportedColorFunctions = (cssText: string): string => {
-          if (!cssText) return '';
-          const funcNames = ['oklch', 'oklab', 'color-mix', 'lab', 'lch', 'color'];
-          let result = cssText;
-
-          for (const fn of funcNames) {
-            let index = result.indexOf(fn + '(');
-            let safetyGuard = 0;
-            while (index !== -1 && safetyGuard < 500) {
-              safetyGuard++;
-              let depth = 0;
-              let end = -1;
-              for (let i = index + fn.length; i < result.length; i++) {
-                if (result[i] === '(') depth++;
-                else if (result[i] === ')') {
-                  depth--;
-                  if (depth === 0) {
-                    end = i;
-                    break;
-                  }
-                }
-              }
-
-              if (end !== -1) {
-                const colorExpr = result.substring(index, end + 1);
-                let rgbColor = 'rgb(0, 0, 0)';
-                try {
-                  dummyEl.style.color = '';
-                  dummyEl.style.color = colorExpr;
-                  const computed = window.getComputedStyle(dummyEl).color;
-                  if (computed && (computed.startsWith('rgb') || computed.startsWith('rgba'))) {
-                    rgbColor = computed;
-                  }
-                } catch (e) {
-                  rgbColor = 'rgb(0,0,0)';
-                }
-                result = result.substring(0, index) + rgbColor + result.substring(end + 1);
-                index = result.indexOf(fn + '(', index + rgbColor.length);
-              } else {
-                break;
-              }
-            }
-          }
-          return result;
-        };
-
-        // Clean all style tags
+        // 1. Sanitize all style tags to convert oklch/color-mix/lab to standard hex/rgb
         const styleEls = Array.from(clonedDoc.querySelectorAll('style'));
         styleEls.forEach((styleEl) => {
           if (styleEl.textContent) {
-            styleEl.textContent = replaceUnsupportedColorFunctions(styleEl.textContent);
+            styleEl.textContent = sanitizeCssForHtml2Canvas(styleEl.textContent);
           }
         });
 
-        // Clean inline styles on all elements
-        const allElements = Array.from(clonedDoc.querySelectorAll('*'));
+        // 2. Sanitize all inline styles
+        const allElements = Array.from(clonedDoc.querySelectorAll('*')) as HTMLElement[];
         allElements.forEach((el) => {
-          const htmlEl = el as HTMLElement;
-          const styleAttr = htmlEl.getAttribute('style');
+          const styleAttr = el.getAttribute('style');
           if (styleAttr) {
-            htmlEl.setAttribute('style', replaceUnsupportedColorFunctions(styleAttr));
+            el.setAttribute('style', sanitizeCssForHtml2Canvas(styleAttr));
           }
         });
 
-        if (clonedDoc.body.contains(dummyEl)) {
-          clonedDoc.body.removeChild(dummyEl);
-        }
-
-        // Prepare the target element inside cloned document
+        // 3. Inline computed styles from original element onto cloned element
         const clonedElement = clonedDoc.getElementById(elementId);
-        if (clonedElement) {
+        if (clonedElement && element) {
+          inlineComputedStyles(element, clonedElement);
+
+          // Prepare A4 page layout for html2canvas capture
           clonedElement.style.margin = '0';
           clonedElement.style.boxShadow = 'none';
           clonedElement.style.borderRadius = '0';
@@ -191,8 +183,8 @@ export async function downloadElementAsPDF(elementId: string, filename: string):
     });
 
     const imgData = canvas.toDataURL('image/png');
-    if (!imgData || imgData === 'data:,') {
-      throw new Error('Canvas rendering produced empty image');
+    if (!imgData || imgData === 'data:,' || imgData.length < 100) {
+      throw new Error('Canvas rendering produced invalid image');
     }
 
     const pdf = new jsPDF({
@@ -201,8 +193,8 @@ export async function downloadElementAsPDF(elementId: string, filename: string):
       format: 'a4',
     });
 
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm
+    const pdfHeight = pdf.internal.pageSize.getHeight(); // 297mm
     const imgWidth = canvas.width;
     const imgHeight = canvas.height;
 
@@ -210,11 +202,26 @@ export async function downloadElementAsPDF(elementId: string, filename: string):
       throw new Error('Canvas width/height is zero');
     }
 
-    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-    const imgX = (pdfWidth - imgWidth * ratio) / 2;
-    const imgY = 0;
+    const ratio = pdfWidth / imgWidth;
+    const scaledHeight = imgHeight * ratio;
 
-    pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+    if (scaledHeight <= pdfHeight) {
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, scaledHeight);
+    } else {
+      let heightLeft = scaledHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, scaledHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position -= pdfHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, scaledHeight);
+        heightLeft -= pdfHeight;
+      }
+    }
+
     pdf.save(filename);
     return true;
   } catch (err) {

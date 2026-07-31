@@ -48,6 +48,8 @@ body {
   #invoice-printable-a4 *,
   #receipt-printable-a4,
   #receipt-printable-a4 *,
+  #quotation-printable-a4,
+  #quotation-printable-a4 *,
   .printable-document,
   .printable-document * {
     visibility: visible;
@@ -55,6 +57,7 @@ body {
 
   #invoice-printable-a4,
   #receipt-printable-a4,
+  #quotation-printable-a4,
   .printable-document {
     position: absolute !important;
     left: 0 !important;
