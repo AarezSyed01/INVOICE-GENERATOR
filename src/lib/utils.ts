@@ -93,42 +93,76 @@ export function numberToWordsINR(num: number): string {
 
 const canvasCtx = typeof document !== 'undefined' ? document.createElement('canvas').getContext('2d') : null;
 
-function convertColorToRgbOrHex(colorStr: string): string {
-  if (!canvasCtx) return '#000000';
+function toSafeRgb(colorStr: string): string {
+  if (!colorStr || colorStr === 'transparent' || colorStr === 'none') return colorStr;
+  if (!canvasCtx) return colorStr;
+
+  if (!/(oklch|oklab|lab|lch|color-mix)/i.test(colorStr)) {
+    return colorStr;
+  }
+
   try {
-    canvasCtx.fillStyle = '#000000';
+    canvasCtx.fillStyle = 'rgba(0, 0, 0, 0)';
     canvasCtx.fillStyle = colorStr;
-    const res = canvasCtx.fillStyle;
-    if (res && res !== '#000000') return res;
+    const computed = canvasCtx.fillStyle;
+    if (computed && computed !== 'rgba(0, 0, 0, 0)' && !/(oklch|oklab|lab|lch|color-mix)/i.test(computed)) {
+      return computed;
+    }
   } catch (e) {
     // fallback
   }
-  return '#000000';
+
+  return 'rgb(0, 0, 0)';
 }
 
-function sanitizeCssForHtml2Canvas(cssText: string): string {
+function sanitizeCssText(cssText: string): string {
   if (!cssText) return '';
-  const pattern = /(oklch|oklab|lab|lch|color-mix)\((?:[^()]+|\((?:[^()]+|\([^()]*\))*\))*\)/gi;
-  return cssText.replace(pattern, (match) => {
-    return convertColorToRgbOrHex(match);
+  const colorFnRegex = /(oklch|oklab|lab|lch|color-mix)\((?:[^()]+|\((?:[^()]+|\([^()]*\))*\))*\)/gi;
+  return cssText.replace(colorFnRegex, (match) => {
+    const converted = toSafeRgb(match);
+    return converted !== 'rgb(0, 0, 0)' ? converted : 'transparent';
   });
 }
 
-function inlineComputedStyles(source: HTMLElement, target: HTMLElement) {
+function applyComputedStyles(source: HTMLElement, target: HTMLElement) {
   try {
     const computed = window.getComputedStyle(source);
-    if (computed.color) target.style.color = computed.color;
-    if (computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-      target.style.backgroundColor = computed.backgroundColor;
+
+    if (computed.color) {
+      target.style.color = toSafeRgb(computed.color);
     }
-    if (computed.borderColor) target.style.borderColor = computed.borderColor;
+    if (computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)' && computed.backgroundColor !== 'transparent') {
+      target.style.backgroundColor = toSafeRgb(computed.backgroundColor);
+    }
+    if (computed.borderColor) {
+      target.style.borderColor = toSafeRgb(computed.borderColor);
+    }
+    if (computed.borderTopColor) target.style.borderTopColor = toSafeRgb(computed.borderTopColor);
+    if (computed.borderRightColor) target.style.borderRightColor = toSafeRgb(computed.borderRightColor);
+    if (computed.borderBottomColor) target.style.borderBottomColor = toSafeRgb(computed.borderBottomColor);
+    if (computed.borderLeftColor) target.style.borderLeftColor = toSafeRgb(computed.borderLeftColor);
+
+    if (computed.boxShadow && computed.boxShadow !== 'none') {
+      target.style.boxShadow = computed.boxShadow.replace(
+        /(oklch|oklab|lab|lch|color-mix)\((?:[^()]+|\((?:[^()]+|\([^()]*\))*\))*\)/gi,
+        (m) => toSafeRgb(m)
+      );
+    }
+
+    if (source instanceof SVGElement || target instanceof SVGElement) {
+      if (computed.fill && computed.fill !== 'none') {
+        target.style.fill = toSafeRgb(computed.fill);
+      }
+      if (computed.stroke && computed.stroke !== 'none') {
+        target.style.stroke = toSafeRgb(computed.stroke);
+      }
+    }
 
     const sourceChildren = Array.from(source.children) as HTMLElement[];
     const targetChildren = Array.from(target.children) as HTMLElement[];
-    for (let i = 0; i < sourceChildren.length; i++) {
-      if (sourceChildren[i] && targetChildren[i]) {
-        inlineComputedStyles(sourceChildren[i], targetChildren[i]);
-      }
+    const minLen = Math.min(sourceChildren.length, targetChildren.length);
+    for (let i = 0; i < minLen; i++) {
+      applyComputedStyles(sourceChildren[i], targetChildren[i]);
     }
   } catch (e) {
     // ignore
@@ -148,34 +182,35 @@ export async function downloadElementAsPDF(elementId: string, filename: string):
       backgroundColor: '#ffffff',
       windowWidth: 1200,
       onclone: (clonedDoc) => {
-        // 1. Sanitize all style tags to convert oklch/color-mix/lab to standard hex/rgb
+        // 1. Sanitize style tags
         const styleEls = Array.from(clonedDoc.querySelectorAll('style'));
         styleEls.forEach((styleEl) => {
           if (styleEl.textContent) {
-            styleEl.textContent = sanitizeCssForHtml2Canvas(styleEl.textContent);
+            styleEl.textContent = sanitizeCssText(styleEl.textContent);
           }
         });
 
-        // 2. Sanitize all inline styles
+        // 2. Sanitize inline style attributes
         const allElements = Array.from(clonedDoc.querySelectorAll('*')) as HTMLElement[];
         allElements.forEach((el) => {
           const styleAttr = el.getAttribute('style');
           if (styleAttr) {
-            el.setAttribute('style', sanitizeCssForHtml2Canvas(styleAttr));
+            el.setAttribute('style', sanitizeCssText(styleAttr));
           }
         });
 
-        // 3. Inline computed styles from original element onto cloned element
+        // 3. Inline resolved computed styles from source element to cloned element
         const clonedElement = clonedDoc.getElementById(elementId);
         if (clonedElement && element) {
-          inlineComputedStyles(element, clonedElement);
+          applyComputedStyles(element, clonedElement);
 
-          // Prepare A4 page layout for html2canvas capture
+          // Force standard A4 dimensions on the cloned DOM element (794px x 1123px at 96 DPI)
           clonedElement.style.margin = '0';
           clonedElement.style.boxShadow = 'none';
           clonedElement.style.borderRadius = '0';
           clonedElement.style.transform = 'none';
-          clonedElement.style.width = '210mm';
+          clonedElement.style.width = '794px';
+          clonedElement.style.minHeight = '1123px';
           clonedElement.style.background = '#ffffff';
           clonedElement.style.color = '#000000';
         }

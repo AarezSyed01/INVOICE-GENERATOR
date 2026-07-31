@@ -31,6 +31,7 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   const [downloading, setDownloading] = React.useState(false);
 
   const handlePrint = () => {
+    window.focus();
     window.print();
   };
 
@@ -171,7 +172,7 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
               {/* Invoice Meta Badge Box */}
               <div className="text-left sm:text-right space-y-2 bg-gray-50 p-4 rounded-xl border border-gray-100 min-w-[220px]">
                 <div className="inline-block px-3 py-1 bg-red-600 text-white font-extrabold text-xs uppercase tracking-wider rounded-md mb-1">
-                  TAX INVOICE
+                  INVOICE
                 </div>
                 <h2 className="text-xl font-black text-gray-900 tracking-tight">
                   {invoice.invoiceNumber}
@@ -231,7 +232,6 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                     <th className="py-3 px-2 text-center">Qty</th>
                     <th className="py-3 px-3 text-right">Unit Price</th>
                     <th className="py-3 px-2 text-right">Discount</th>
-                    <th className="py-3 px-2 text-right">GST %</th>
                     <th className="py-3 px-3 text-right rounded-r-lg">Amount</th>
                   </tr>
                 </thead>
@@ -252,7 +252,6 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                       <td className="py-3.5 px-2 text-right text-gray-600">
                         {item.discount > 0 ? formatCurrency(item.discount, invoice.currencySymbol) : '-'}
                       </td>
-                      <td className="py-3.5 px-2 text-right text-gray-600">{item.gstPercentage}%</td>
                       <td className="py-3.5 px-3 text-right font-bold text-gray-900">
                         {formatCurrency(item.amount, invoice.currencySymbol)}
                       </td>
@@ -299,11 +298,6 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                     <span className="font-semibold">-{formatCurrency(invoice.discountTotal, invoice.currencySymbol)}</span>
                   </div>
                 )}
-
-                <div className="flex justify-between text-gray-600">
-                  <span>Total GST ({settings.defaultGstPercentage}%):</span>
-                  <span className="font-semibold text-gray-900">{formatCurrency(invoice.gstTotal, invoice.currencySymbol)}</span>
-                </div>
 
                 {invoice.roundOff !== 0 && (
                   <div className="flex justify-between text-gray-500 text-[11px]">
@@ -366,7 +360,7 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
           <div className="mt-8 border-t border-gray-200 pt-4 flex flex-col sm:flex-row items-end justify-between gap-4">
             <div className="text-[10px] text-gray-400">
               <p className="font-semibold text-gray-700">AR Web Solutions • We Design • We Develop • We Grow</p>
-              <p>This is a computer-generated tax invoice.</p>
+              <p>This is a computer-generated invoice.</p>
             </div>
 
             <div className="text-center sm:text-right">

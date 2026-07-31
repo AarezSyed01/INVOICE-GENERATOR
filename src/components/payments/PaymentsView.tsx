@@ -153,7 +153,10 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({ invoices, settings, 
               </button>
 
               <button
-                onClick={() => window.print()}
+                onClick={() => {
+                  window.focus();
+                  window.print();
+                }}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 dark:bg-gray-700 hover:bg-black text-white font-semibold text-xs rounded-xl shadow-md transition-all"
               >
                 <Printer className="w-4 h-4" />

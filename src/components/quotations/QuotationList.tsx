@@ -179,7 +179,7 @@ export const QuotationList: React.FC<QuotationListProps> = ({
                           <button
                             onClick={() => onConvertQuotationToInvoice(qt)}
                             className="flex items-center gap-1 px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-[11px] rounded-lg shadow-xs transition-all"
-                            title="Convert Quotation to Tax Invoice"
+                            title="Convert Quotation to Invoice"
                           >
                             <ArrowRightLeft className="w-3.5 h-3.5" />
                             <span>Convert to Invoice</span>
@@ -225,7 +225,10 @@ export const QuotationList: React.FC<QuotationListProps> = ({
               </button>
 
               <button
-                onClick={() => window.print()}
+                onClick={() => {
+                  window.focus();
+                  window.print();
+                }}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 dark:bg-gray-700 hover:bg-black text-white font-semibold text-xs rounded-xl shadow-md transition-all"
               >
                 <Printer className="w-4 h-4" />

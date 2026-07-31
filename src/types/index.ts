@@ -17,7 +17,7 @@ export interface Client {
   businessName: string;
   email: string;
   phone: string;
-  gstNumber: string;
+  gstNumber?: string;
   address: string;
   city: string;
   state: string;
@@ -35,7 +35,7 @@ export interface ServiceItem {
   quantity: number;
   unitPrice: number;
   discount: number; // percentage or fixed
-  gstPercentage: number;
+  gstPercentage?: number;
   amount: number;
 }
 
@@ -66,7 +66,7 @@ export interface Invoice {
   discountType: 'percentage' | 'fixed';
   discountValue: number;
   discountTotal: number;
-  gstTotal: number;
+  gstTotal?: number;
   roundOff: number;
   grandTotal: number;
   advanceReceived: number;
@@ -99,7 +99,7 @@ export interface Quotation {
   discountType: 'percentage' | 'fixed';
   discountValue: number;
   discountTotal: number;
-  gstTotal: number;
+  gstTotal?: number;
   grandTotal: number;
   
   notes: string;
@@ -113,7 +113,7 @@ export interface ServiceTemplate {
   name: string;
   description: string;
   suggestedPrice: number;
-  defaultGst: number;
+  defaultGst?: number;
 }
 
 export interface CompanySettings {
@@ -126,12 +126,12 @@ export interface CompanySettings {
   city: string;
   state: string;
   pinCode: string;
-  gstNumber: string;
+  gstNumber?: string;
   
   logoUrl: string;
   signatureUrl: string;
   
-  defaultGstPercentage: number;
+  defaultGstPercentage?: number;
   defaultCurrency: string;
   defaultCurrencySymbol: string;
   invoicePrefix: string;

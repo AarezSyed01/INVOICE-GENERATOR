@@ -182,30 +182,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               className="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-hidden"
             />
           </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-              Company GSTIN Number
-            </label>
-            <input
-              type="text"
-              value={formData.gstNumber}
-              onChange={(e) => handleChange('gstNumber', e.target.value.toUpperCase())}
-              className="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-mono text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-hidden"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-              Default GST Rate (%)
-            </label>
-            <input
-              type="number"
-              value={formData.defaultGstPercentage}
-              onChange={(e) => handleChange('defaultGstPercentage', Number(e.target.value))}
-              className="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-hidden"
-            />
-          </div>
         </div>
       </div>
 

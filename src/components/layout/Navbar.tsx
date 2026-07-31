@@ -58,7 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <div className="flex items-center gap-2">
               <Search className="w-4 h-4 text-gray-400 group-hover:text-red-500 transition-colors" />
-              <span>Search invoices, clients, GST numbers...</span>
+              <span>Search invoices, clients...</span>
             </div>
             <kbd className="px-1.5 py-0.5 text-[10px] font-semibold bg-white/80 dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 rounded-md text-gray-600 dark:text-gray-300 shadow-2xs">
               Ctrl K

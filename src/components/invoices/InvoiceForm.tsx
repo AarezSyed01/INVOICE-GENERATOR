@@ -76,8 +76,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
       quantity: 1,
       unitPrice: 35000,
       discount: 0,
-      gstPercentage: settings.defaultGstPercentage || 18,
-      amount: 41300,
+      amount: 35000,
     },
   ]);
 
@@ -156,7 +155,6 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
       quantity: 1,
       unitPrice: 0,
       discount: 0,
-      gstPercentage: settings.defaultGstPercentage || 18,
       amount: 0,
     };
     setServices([...services, newItem]);
@@ -190,12 +188,10 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     const qty = Number(item.quantity) || 0;
     const price = Number(item.unitPrice) || 0;
     const itemDisc = Number(item.discount) || 0;
-    const gstPct = Number(item.gstPercentage) || 0;
 
     const basePriceAfterDiscount = Math.max(0, price - itemDisc);
     const itemSubtotal = basePriceAfterDiscount * qty;
-    const itemGst = (itemSubtotal * gstPct) / 100;
-    item.amount = Math.round((itemSubtotal + itemGst) * 100) / 100;
+    item.amount = Math.round(itemSubtotal * 100) / 100;
 
     next[index] = item;
     setServices(next);
@@ -209,29 +205,23 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     handleServiceChange(index, 'serviceName', tmpl.name);
     handleServiceChange(index, 'description', tmpl.description);
     handleServiceChange(index, 'unitPrice', tmpl.suggestedPrice);
-    handleServiceChange(index, 'gstPercentage', tmpl.defaultGst);
   };
 
   // Financial Calculations Engine
   const calculations = useMemo(() => {
     let rawSubtotal = 0;
     let itemDiscounts = 0;
-    let gstTotal = 0;
 
     services.forEach((s) => {
       const qty = Number(s.quantity) || 0;
       const price = Number(s.unitPrice) || 0;
       const disc = Number(s.discount) || 0;
-      const gstPct = Number(s.gstPercentage) || 0;
 
       const base = price * qty;
       const discAmt = disc * qty;
-      const netBase = Math.max(0, base - discAmt);
-      const gst = (netBase * gstPct) / 100;
 
       rawSubtotal += base;
       itemDiscounts += discAmt;
-      gstTotal += gst;
     });
 
     let globalDiscount = 0;
@@ -243,7 +233,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
     const totalDiscount = itemDiscounts + globalDiscount;
     const netSubtotal = Math.max(0, rawSubtotal - globalDiscount);
-    const unroundedGrand = netSubtotal + gstTotal;
+    const unroundedGrand = netSubtotal;
     const grandTotal = Math.round(unroundedGrand);
     const roundOff = Math.round((grandTotal - unroundedGrand) * 100) / 100;
     const remainingBalance = Math.max(0, grandTotal - (Number(advanceReceived) || 0));
@@ -251,7 +241,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     return {
       subtotal: rawSubtotal,
       discountTotal: totalDiscount,
-      gstTotal,
+      gstTotal: 0,
       roundOff,
       grandTotal,
       remainingBalance,
@@ -360,7 +350,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
       businessName: businessName || 'Business Name',
       email: email || 'client@example.com',
       phone: phone || '+91 9876543210',
-      gstNumber: gstNumber || '27XXXXX0000X1Z0',
+      gstNumber: gstNumber || '',
       address: address || '123 Business Park',
       city: city || 'Mumbai',
       state: state || 'Maharashtra',
@@ -549,19 +539,6 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
               onChange={(e) => setBusinessName(e.target.value)}
               className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-hidden"
               placeholder="e.g. Apex Logistics & Freight"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-              GST Number
-            </label>
-            <input
-              type="text"
-              value={gstNumber}
-              onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
-              className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-mono text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-hidden"
-              placeholder="27AAACA1234F1Z8"
             />
           </div>
 
@@ -794,21 +771,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    GST Rate (%)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="28"
-                    value={item.gstPercentage}
-                    onChange={(e) => handleServiceChange(idx, 'gstPercentage', e.target.value)}
-                    className="w-full px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-hidden"
-                  />
-                </div>
-
-                <div className="md:col-span-2 flex flex-col justify-end">
+                <div className="md:col-span-3 flex flex-col justify-end">
                   <div className="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-right">
                     <span className="text-[10px] text-gray-500 dark:text-gray-400 block">Row Total</span>
                     <span className="text-xs font-extrabold text-gray-900 dark:text-white">
@@ -913,13 +876,6 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                   className="w-20 px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-bold text-right"
                 />
               </div>
-            </div>
-
-            <div className="flex justify-between text-gray-600 dark:text-gray-400">
-              <span>GST Total ({settings.defaultGstPercentage}%):</span>
-              <span className="font-bold text-gray-900 dark:text-white">
-                {formatCurrency(calculations.gstTotal, currencySymbol)}
-              </span>
             </div>
 
             {calculations.roundOff !== 0 && (

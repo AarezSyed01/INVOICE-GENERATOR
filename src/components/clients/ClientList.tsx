@@ -134,11 +134,6 @@ export const ClientList: React.FC<ClientListProps> = ({
               </div>
 
               <div className="space-y-1.5 text-xs text-gray-600 dark:text-gray-300 pt-1">
-                {client.gstNumber && (
-                  <p className="flex items-center gap-2 font-mono text-[11px] text-gray-500">
-                    <span className="font-semibold text-gray-700 dark:text-gray-300">GST:</span> {client.gstNumber}
-                  </p>
-                )}
                 <p className="flex items-center gap-2 truncate">
                   <Mail className="w-3.5 h-3.5 text-red-500 shrink-0" />
                   <a href={`mailto:${client.email}`} className="hover:underline truncate">

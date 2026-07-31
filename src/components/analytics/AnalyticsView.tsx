@@ -45,7 +45,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   const totalInvoicesCount = invoices.length;
   const totalRevenue = invoices.reduce((acc, inv) => acc + inv.grandTotal, 0);
   const avgInvoiceValue = totalInvoicesCount > 0 ? Math.round(totalRevenue / totalInvoicesCount) : 0;
-  const totalGstCollected = invoices.reduce((acc, inv) => acc + inv.gstTotal, 0);
   const totalPendingBalance = invoices.reduce((acc, inv) => acc + inv.remainingBalance, 0);
 
   // Top Selling Services Aggregation
@@ -75,21 +74,23 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
     { month: 'Oct (Projected)', revenue: Math.round(totalRevenue * 1.42) },
   ];
 
-  // GST Summary Report Export
-  const handleExportGstReport = () => {
+  // Financial Summary Report Export
+  const handleExportFinancialReport = () => {
     const rows = invoices.map((inv) => ({
       InvoiceNumber: inv.invoiceNumber,
       Date: inv.date,
       ClientName: inv.client.name,
-      ClientBusiness: inv.client.businessName,
-      ClientGSTIN: inv.client.gstNumber,
-      TaxableValue: inv.subtotal - inv.discountTotal,
-      GSTAmount: inv.gstTotal,
+      ClientBusiness: inv.client.businessName || '',
+      Subtotal: inv.subtotal,
+      DiscountTotal: inv.discountTotal,
       GrandTotal: inv.grandTotal,
+      PaidAmount: inv.advanceReceived,
+      RemainingBalance: inv.remainingBalance,
+      Status: inv.status,
     }));
 
-    downloadCSV(`ARWS_GST_Report_${reportMonth}.csv`, rows);
-    onToast('success', 'GST Report Exported', `Exported GST breakdown for ${reportMonth}`);
+    downloadCSV(`ARWS_Financial_Report_${reportMonth}.csv`, rows);
+    onToast('success', 'Financial Report Exported', `Exported breakdown for ${reportMonth}`);
   };
 
   return (
@@ -98,19 +99,19 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
-            Revenue Analytics & GST Reports
+            Revenue & Service Analytics
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Financial analytics, top services, client LTV, and GST filings
+            Financial analytics, top services, client overview, and revenue reports
           </p>
         </div>
 
         <button
-          onClick={handleExportGstReport}
+          onClick={handleExportFinancialReport}
           className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-red-500/25 transition-all self-start sm:self-auto"
         >
           <Download className="w-4 h-4" />
-          <span>Export GST Report (CSV)</span>
+          <span>Export Financial Report (CSV)</span>
         </button>
       </div>
 
@@ -129,13 +130,13 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 
         <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xs">
           <div className="flex items-center justify-between text-gray-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Total GST Collected</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Total Revenue</span>
             <Receipt className="w-4 h-4 text-red-500" />
           </div>
           <h3 className="text-xl font-black text-gray-900 dark:text-white">
-            {formatCurrency(totalGstCollected, settings.defaultCurrencySymbol)}
+            {formatCurrency(totalRevenue, settings.defaultCurrencySymbol)}
           </h3>
-          <p className="text-[10px] text-gray-500 mt-1">18% GST output tax ledger</p>
+          <p className="text-[10px] text-gray-500 mt-1">Total invoiced value</p>
         </div>
 
         <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xs">

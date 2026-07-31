@@ -19,7 +19,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   const [businessName, setBusinessName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [gstNumber, setGstNumber] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
@@ -32,7 +31,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       setBusinessName(client.businessName || '');
       setEmail(client.email || '');
       setPhone(client.phone || '');
-      setGstNumber(client.gstNumber || '');
       setAddress(client.address || '');
       setCity(client.city || '');
       setState(client.state || '');
@@ -43,7 +41,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       setBusinessName('');
       setEmail('');
       setPhone('');
-      setGstNumber('');
       setAddress('');
       setCity('');
       setState('');
@@ -63,7 +60,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       businessName,
       email,
       phone,
-      gstNumber,
       address,
       city,
       state,
@@ -127,19 +123,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({
                 onChange={(e) => setBusinessName(e.target.value)}
                 className="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-hidden"
                 placeholder="Apex Logistics Ltd"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                GST Number
-              </label>
-              <input
-                type="text"
-                value={gstNumber}
-                onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
-                className="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-mono text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-hidden"
-                placeholder="27AAACA1234F1Z8"
               />
             </div>
 
